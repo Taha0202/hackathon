@@ -149,7 +149,23 @@ def verify_faces(
     DeepFace = _get_deepface()
 
     # Step 1: Detect face on the ID card
-    bbox = detect_face_haar(id_card_img)
+    try:
+        bbox = detect_face_haar(id_card_img)
+    except Exception as e:
+        cascade_path = "Unknown"
+        try:
+            cascade_path = get_cascade_path()
+        except Exception:
+            pass
+        return {
+            "verified": False,
+            "confidence": 0.0,
+            "distance": None,
+            "threshold": None,
+            "id_face_crop": None,
+            "id_face_bbox": None,
+            "error": f"Face detection failed: {str(e)} (cv2 has CascadeClassifier: {hasattr(cv2, 'CascadeClassifier')}, cascade_path: {cascade_path})",
+        }
 
     if bbox is None:
         return {
