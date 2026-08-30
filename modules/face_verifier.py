@@ -123,24 +123,26 @@ def _save_temp_image(img: np.ndarray, prefix: str = "face") -> str:
 
 def detect_face_deepface(img: np.ndarray) -> tuple:
     """
-    Detect the largest face in an image using DeepFace's SSD backend.
-    This acts as a fallback when cv2.CascadeClassifier is not available.
+    Detect the largest face in an image using multiple DeepFace backends in sequence.
+    Acts as a robust fallback for small, rotated, or low-contrast faces.
     """
     try:
         DeepFace = _get_deepface()
-        # Save temp image for DeepFace input
         temp_path = _save_temp_image(img, "detect_input")
         try:
-            # SSD is lightweight, fast, and does not depend on cv2.CascadeClassifier
-            faces = DeepFace.extract_faces(
-                img_path=temp_path,
-                detector_backend="ssd",
-                enforce_detection=True
-            )
-            if faces:
-                # Return the facial area of the first detected face
-                area = faces[0]["facial_area"]
-                return (area["x"], area["y"], area["w"], area["h"])
+            # Try SSD first (fastest), then MTCNN (robust for small faces), then MediaPipe
+            for backend in ["ssd", "mtcnn", "mediapipe"]:
+                try:
+                    faces = DeepFace.extract_faces(
+                        img_path=temp_path,
+                        detector_backend=backend,
+                        enforce_detection=True
+                    )
+                    if faces:
+                        area = faces[0]["facial_area"]
+                        return (area["x"], area["y"], area["w"], area["h"])
+                except Exception:
+                    continue
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -186,7 +188,7 @@ def verify_faces(
         except Exception:
             pass
 
-    # Fall back to DeepFace SSD detector if Haar failed or is unavailable
+    # Fall back to DeepFace detectors if Haar failed or is unavailable
     if bbox is None:
         try:
             bbox = detect_face_deepface(id_card_img)
@@ -221,13 +223,13 @@ def verify_faces(
 
     try:
         # Step 4: Run DeepFace verification
-        # Use 'ssd' backend here too, or 'skip' since we already cropped
+        # Use 'skip' backend since we already cropped the face region manually
         result = DeepFace.verify(
             img1_path=id_face_path,
             img2_path=selfie_path,
             model_name=model_name,
             enforce_detection=False,
-            detector_backend="ssd",
+            detector_backend="skip",
         )
 
         # Step 5: Calculate confidence
