@@ -8,10 +8,7 @@ Run with:  streamlit run app.py
 """
 
 import streamlit as st
-from utils.helpers import bytes_to_cv2, cv2_to_pil, draw_face_bbox, resize_for_display
-from modules.document_processor import process_document
-from modules.ocr_extractor import extract_fields
-from modules.face_verifier import verify_faces
+import traceback
 
 # ──────────────────────────────────────────────────────────────────────
 # Page Configuration
@@ -22,6 +19,15 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+try:
+    from utils.helpers import bytes_to_cv2, cv2_to_pil, draw_face_bbox, resize_for_display
+    from modules.document_processor import process_document
+    from modules.ocr_extractor import extract_fields
+    from modules.face_verifier import verify_faces
+    startup_error = None
+except Exception as e:
+    startup_error = traceback.format_exc()
 
 # ──────────────────────────────────────────────────────────────────────
 # Custom CSS — Warm Minimal Light Theme
@@ -458,6 +464,12 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+if startup_error:
+    st.error("### ⚠️ App Failed to Start (Startup/Import Error)")
+    st.markdown("Below is the traceback of the exception encountered during initialization:")
+    st.code(startup_error, language="python")
+    st.stop()
 
 # Step indicator
 st.markdown(
