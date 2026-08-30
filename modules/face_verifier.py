@@ -121,6 +121,34 @@ def _save_temp_image(img: np.ndarray, prefix: str = "face") -> str:
     return path
 
 
+def detect_face_deepface(img: np.ndarray) -> tuple:
+    """
+    Detect the largest face in an image using DeepFace's SSD backend.
+    This acts as a fallback when cv2.CascadeClassifier is not available.
+    """
+    try:
+        DeepFace = _get_deepface()
+        # Save temp image for DeepFace input
+        temp_path = _save_temp_image(img, "detect_input")
+        try:
+            # SSD is lightweight, fast, and does not depend on cv2.CascadeClassifier
+            faces = DeepFace.extract_faces(
+                img_path=temp_path,
+                detector_backend="ssd",
+                enforce_detection=True
+            )
+            if faces:
+                # Return the facial area of the first detected face
+                area = faces[0]["facial_area"]
+                return (area["x"], area["y"], area["w"], area["h"])
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    except Exception:
+        pass
+    return None
+
+
 def verify_faces(
     id_card_img: np.ndarray,
     selfie_img: np.ndarray,
@@ -149,30 +177,29 @@ def verify_faces(
     DeepFace = _get_deepface()
 
     # Step 1: Detect face on the ID card
-    try:
-        bbox = detect_face_haar(id_card_img)
-    except Exception as e:
-        cascade_path = "Unknown"
-        cv2_file = "Unknown"
-        cv2_version = "Unknown"
+    bbox = None
+    
+    # Try Haar cascade first if CascadeClassifier exists
+    if hasattr(cv2, 'CascadeClassifier'):
         try:
-            cascade_path = get_cascade_path()
+            bbox = detect_face_haar(id_card_img)
         except Exception:
             pass
+
+    # Fall back to DeepFace SSD detector if Haar failed or is unavailable
+    if bbox is None:
         try:
-            cv2_file = getattr(cv2, '__file__', 'No __file__')
-            cv2_version = getattr(cv2, '__version__', 'No __version__')
-        except Exception:
-            pass
-        return {
-            "verified": False,
-            "confidence": 0.0,
-            "distance": None,
-            "threshold": None,
-            "id_face_crop": None,
-            "id_face_bbox": None,
-            "error": f"Face detection failed: {str(e)} (cv2 file: {cv2_file}, version: {cv2_version}, has CascadeClassifier: {hasattr(cv2, 'CascadeClassifier')}, cascade_path: {cascade_path})",
-        }
+            bbox = detect_face_deepface(id_card_img)
+        except Exception as e:
+            return {
+                "verified": False,
+                "confidence": 0.0,
+                "distance": None,
+                "threshold": None,
+                "id_face_crop": None,
+                "id_face_bbox": None,
+                "error": f"Face detection failed: {str(e)}",
+            }
 
     if bbox is None:
         return {
@@ -194,12 +221,13 @@ def verify_faces(
 
     try:
         # Step 4: Run DeepFace verification
+        # Use 'ssd' backend here too, or 'skip' since we already cropped
         result = DeepFace.verify(
             img1_path=id_face_path,
             img2_path=selfie_path,
             model_name=model_name,
             enforce_detection=False,
-            detector_backend="opencv",
+            detector_backend="ssd",
         )
 
         # Step 5: Calculate confidence
