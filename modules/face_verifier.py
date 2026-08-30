@@ -153,8 +153,15 @@ def verify_faces(
         bbox = detect_face_haar(id_card_img)
     except Exception as e:
         cascade_path = "Unknown"
+        cv2_file = "Unknown"
+        cv2_version = "Unknown"
         try:
             cascade_path = get_cascade_path()
+        except Exception:
+            pass
+        try:
+            cv2_file = getattr(cv2, '__file__', 'No __file__')
+            cv2_version = getattr(cv2, '__version__', 'No __version__')
         except Exception:
             pass
         return {
@@ -164,7 +171,7 @@ def verify_faces(
             "threshold": None,
             "id_face_crop": None,
             "id_face_bbox": None,
-            "error": f"Face detection failed: {str(e)} (cv2 has CascadeClassifier: {hasattr(cv2, 'CascadeClassifier')}, cascade_path: {cascade_path})",
+            "error": f"Face detection failed: {str(e)} (cv2 file: {cv2_file}, version: {cv2_version}, has CascadeClassifier: {hasattr(cv2, 'CascadeClassifier')}, cascade_path: {cascade_path})",
         }
 
     if bbox is None:
