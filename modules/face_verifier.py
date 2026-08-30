@@ -23,6 +23,37 @@ def _get_deepface():
     return _deepface
 
 
+def get_cascade_path() -> str:
+    """
+    Get the path to the Haar cascade file.
+    If cv2.data.haarcascades is not available, downloads it from OpenCV's official repo.
+    """
+    import urllib.request
+    
+    # Try using default cv2.data
+    try:
+        if hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades') and cv2.data.haarcascades:
+            path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+            if os.path.exists(path):
+                return path
+    except Exception:
+        pass
+
+    # Fallback to downloading locally in the modules directory
+    local_dir = os.path.dirname(os.path.abspath(__file__))
+    local_path = os.path.join(local_dir, "haarcascade_frontalface_default.xml")
+    
+    if not os.path.exists(local_path):
+        url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
+        try:
+            urllib.request.urlretrieve(url, local_path)
+        except Exception as e:
+            # If download fails, try another mirror or raise error
+            raise RuntimeError(f"Failed to download Haar cascade file: {str(e)}")
+            
+    return local_path
+
+
 def detect_face_haar(img: np.ndarray) -> tuple:
     """
     Detect the largest face in an image using OpenCV's Haar Cascade.
@@ -36,8 +67,7 @@ def detect_face_haar(img: np.ndarray) -> tuple:
     """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Load Haar cascade from OpenCV's bundled data
-    cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    cascade_path = get_cascade_path()
     face_cascade = cv2.CascadeClassifier(cascade_path)
 
     faces = face_cascade.detectMultiScale(

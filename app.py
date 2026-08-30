@@ -338,7 +338,7 @@ st.markdown(
     }
 
     /* Upload button inside the uploader */
-    div[data-testid="stFileUploader"] button {
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button {
         background: #c27040 !important;
         color: transparent !important;
         border: none !important;
@@ -353,7 +353,7 @@ st.markdown(
         height: 38px !important;
         overflow: hidden !important;
     }
-    div[data-testid="stFileUploader"] button::after {
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button::after {
         content: "Choose File";
         color: #ffffff;
         font-family: 'DM Sans', sans-serif;
@@ -364,9 +364,9 @@ st.markdown(
         left: 50%;
         transform: translate(-50%, -50%);
     }
-    div[data-testid="stFileUploader"] button span,
-    div[data-testid="stFileUploader"] button p,
-    div[data-testid="stFileUploader"] button div {
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button span,
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button p,
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button div {
         visibility: hidden !important;
         font-size: 0 !important;
         line-height: 0 !important;
@@ -374,7 +374,7 @@ st.markdown(
         height: 0 !important;
         overflow: hidden !important;
     }
-    div[data-testid="stFileUploader"] button:hover {
+    div[data-testid="stFileUploader"] [data-testid="stFileUploaderDropzoneInstructions"] button:hover {
         background: #a85d32 !important;
         box-shadow: 0 4px 12px rgba(194, 112, 64, 0.35) !important;
         transform: translateY(-1px) !important;
